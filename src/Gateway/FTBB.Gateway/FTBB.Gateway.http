@@ -1,0 +1,6 @@
+@FTBB.Gateway_HostAddress = http://localhost:5003
+
+GET {{FTBB.Gateway_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

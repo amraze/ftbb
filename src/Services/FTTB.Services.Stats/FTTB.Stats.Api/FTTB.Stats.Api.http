@@ -1,0 +1,6 @@
+@FTTB.Stats.Api_HostAddress = http://localhost:5243
+
+GET {{FTTB.Stats.Api_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

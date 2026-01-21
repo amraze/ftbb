@@ -1,0 +1,6 @@
+@FTBB.PdfWorker.Service_HostAddress = http://localhost:5008
+
+GET {{FTBB.PdfWorker.Service_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
