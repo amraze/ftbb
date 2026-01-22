@@ -1,6 +1,0 @@
-@FTTB.Teams.Api_HostAddress = http://localhost:5192
-
-GET {{FTTB.Teams.Api_HostAddress}}/weatherforecast/
-Accept: application/json
-
-###
