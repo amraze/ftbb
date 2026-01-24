@@ -1,5 +1,6 @@
 using FTBB.PdfWorker.Filters;
 using FTBB.PdfWorker.Pipes;
+using FTBB.PdfWorker.Services;
 using Google.Apis.Auth.OAuth2;
 using Google.Apis.Drive.v3;
 using Google.Apis.Services;
@@ -11,25 +12,26 @@ namespace FTBB.PdfWorker
     {
         private readonly ILogger<Worker> _logger;
         private readonly ILoggerFactory _loggerFactory;
+        private readonly IPdfEventPublisher _eventPublisher;
         private DriveService? _driveService;
         private IFolderFilter? _filter;
         private IFolderPipe? _pipeline;
         private Queue<(string Id, string Name)> _queue = new Queue<(string, string)>();
-
+        
         private const string FolderId = "1T1Ys0l2xyAQiz7QVIUe-hzlT3OqmKRQM";
         private const string DownloadBasePath = "./Downloads";
 
-        public Worker(ILogger<Worker> logger, ILoggerFactory loggerFactory)
+        public Worker(ILogger<Worker> logger,ILoggerFactory loggerFactory,IPdfEventPublisher eventPublisher)
         {
             _logger = logger;
             _loggerFactory = loggerFactory;
+            _eventPublisher = eventPublisher;
         }
 
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
             await InitializeAsync();
             Directory.CreateDirectory(DownloadBasePath);
-
             DateTime nextCheck = DateTime.UtcNow;
 
             while (!stoppingToken.IsCancellationRequested)
@@ -50,6 +52,8 @@ namespace FTBB.PdfWorker
                     {
                         var folder = _queue.Dequeue();
                         await _pipeline!.ProcessAsync(folder, stoppingToken);
+                        var folderPath = Path.Combine(DownloadBasePath, folder.Name);
+                        await _eventPublisher.PublishFolderReadyAsync(folder.Id, folder.Name, folderPath);
                     }
 
                     await Task.Delay(60000, stoppingToken);
