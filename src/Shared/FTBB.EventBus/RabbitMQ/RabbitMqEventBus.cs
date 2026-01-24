@@ -22,11 +22,7 @@ public class RabbitMqEventBus : IEventBus, IDisposable
     private readonly Dictionary<string, List<Type>> _handlers;
     private readonly List<Type> _eventTypes;
 
-    public RabbitMqEventBus(
-        IRabbitMqConnection connection,
-        ILogger<RabbitMqEventBus> logger,
-        string exchangeName = "ftbb_event_bus",
-        string queueName = "ftbb_queue")
+    public RabbitMqEventBus(IRabbitMqConnection connection,ILogger<RabbitMqEventBus> logger,string exchangeName = "ftbb_event_bus",string queueName = "ftbb_queue")
     {
         _connection = connection ?? throw new ArgumentNullException(nameof(connection));
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
@@ -34,7 +30,6 @@ public class RabbitMqEventBus : IEventBus, IDisposable
         _queueName = queueName;
         _handlers = new Dictionary<string, List<Type>>();
         _eventTypes = new List<Type>();
-
         _connection.TryConnect();
     }
 
@@ -46,9 +41,6 @@ public class RabbitMqEventBus : IEventBus, IDisposable
         }
 
         var eventName = @event.GetType().Name;
-
-        _logger.LogInformation("Publishing event to RabbitMQ: {EventName}", eventName);
-
         using var channel = _connection.CreateModel();
 
         channel.ExchangeDeclare(
@@ -61,20 +53,12 @@ public class RabbitMqEventBus : IEventBus, IDisposable
         var body = Encoding.UTF8.GetBytes(message);
 
         var properties = channel.CreateBasicProperties();
-        properties.DeliveryMode = 2; // persistent
+        properties.DeliveryMode = 2;
 
-        channel.BasicPublish(
-            exchange: _exchangeName,
-            routingKey: string.Empty,
-            basicProperties: properties,
-            body: body);
-
-        _logger.LogInformation("Published event {EventName}: {EventId}", eventName, @event.Id);
+        channel.BasicPublish(exchange: _exchangeName,routingKey: string.Empty,basicProperties: properties,body: body);
     }
 
-    public void Subscribe<T, TH>()
-        where T : IntegrationEvent
-        where TH : IIntegrationEventHandler<T>
+    public void Subscribe<T, TH>() where T : IntegrationEvent where TH : IIntegrationEventHandler<T>
     {
         var eventName = typeof(T).Name;
         var handlerType = typeof(TH);
@@ -96,10 +80,7 @@ public class RabbitMqEventBus : IEventBus, IDisposable
         }
 
         _handlers[eventName].Add(handlerType);
-
         StartBasicConsume();
-
-        _logger.LogInformation("Subscribed to event {EventName} with handler {HandlerName}", eventName, handlerType.Name);
     }
 
     private void StartBasicConsume()
@@ -108,8 +89,6 @@ public class RabbitMqEventBus : IEventBus, IDisposable
         {
             return;
         }
-
-        _logger.LogInformation("Starting RabbitMQ basic consume");
 
         if (!_connection.IsConnected)
         {
@@ -163,8 +142,6 @@ public class RabbitMqEventBus : IEventBus, IDisposable
 
     private async Task ProcessEvent(string eventName, string message)
     {
-        _logger.LogInformation("Processing RabbitMQ event: {EventName}", eventName);
-
         if (_handlers.ContainsKey(eventName))
         {
             var subscriptions = _handlers[eventName];

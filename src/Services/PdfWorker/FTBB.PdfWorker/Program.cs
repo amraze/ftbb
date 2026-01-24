@@ -2,7 +2,6 @@ using FTBB.EventBus.Abstractions;
 using FTBB.EventBus.RabbitMQ;
 using FTBB.PdfWorker;
 using FTBB.PdfWorker.Services;
-using Microsoft.Extensions.Logging;
 using RabbitMQ.Client;
 
 var builder = Host.CreateApplicationBuilder(args);

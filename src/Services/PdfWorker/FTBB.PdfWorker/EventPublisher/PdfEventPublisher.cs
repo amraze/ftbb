@@ -24,7 +24,7 @@ public class PdfEventPublisher : IPdfEventPublisher
         };
 
         _eventBus.Publish(evt);
-        _logger.LogInformation("Published folder ready: '{FolderName}' at {Path}", folderName, folderPath);
+        _logger.LogInformation("Published folder ready: '{FolderName}'", folderName);
 
         return Task.CompletedTask;
     }

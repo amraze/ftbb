@@ -98,7 +98,7 @@ namespace FTBB.PdfWorker
                 DownloadBasePath,
                 _loggerFactory.CreateLogger<FolderDownloadPipe>());
 
-            _logger.LogInformation("Initialized");
+            _logger.LogInformation("Initialized Pdf Worker");
         }
 
         public override void Dispose()
