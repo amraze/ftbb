@@ -45,7 +45,7 @@ public class RabbitMqEventBus : IEventBus, IDisposable
 
         channel.ExchangeDeclare(
             exchange: _exchangeName,
-            type: ExchangeType.Fanout,
+            type: ExchangeType.Topic,
             durable: true,
             autoDelete: false);
 
@@ -99,7 +99,7 @@ public class RabbitMqEventBus : IEventBus, IDisposable
 
         _consumerChannel.ExchangeDeclare(
             exchange: _exchangeName,
-            type: ExchangeType.Fanout,
+            type: ExchangeType.Topic,
             durable: true,
             autoDelete: false);
 

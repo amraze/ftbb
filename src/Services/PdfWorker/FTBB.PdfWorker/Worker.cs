@@ -53,7 +53,7 @@ namespace FTBB.PdfWorker
                         var folder = _queue.Dequeue();
                         await _pipeline!.ProcessAsync(folder, stoppingToken);
                         var folderPath = Path.Combine(DownloadBasePath, folder.Name);
-                        await _eventPublisher.PublishFolderReadyAsync(folder.Id, folder.Name, folderPath);
+                        await _eventPublisher.PublishFolderReadyAsync(folderPath);
                     }
 
                     await Task.Delay(60000, stoppingToken);

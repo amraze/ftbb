@@ -20,7 +20,6 @@ namespace FTBB.PdfWorker.Pipes
         {
             string localPath = Path.Combine(_downloadBasePath, folder.Name);
             await DownloadFolderAsync(folder.Id, folder.Name, localPath, cancellationToken);
-            _logger.LogInformation("Completed download folder : {name}", folder.Name);
         }
 
         private async Task DownloadFolderAsync(string folderId, string folderName, string localPath, CancellationToken cancellationToken)

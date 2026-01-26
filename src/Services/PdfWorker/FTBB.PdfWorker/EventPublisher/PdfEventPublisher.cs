@@ -14,17 +14,15 @@ public class PdfEventPublisher : IPdfEventPublisher
         _logger = logger;
     }
 
-    public Task PublishFolderReadyAsync(string folderId, string folderName, string folderPath)
+    public Task PublishFolderReadyAsync(string folderPath)
     {
         var evt = new PdfDownloadedEvent
         {
             FolderPath = folderPath,
-            FolderName = folderName,
-            GoogleDriveFolderId = folderId
         };
 
         _eventBus.Publish(evt);
-        _logger.LogInformation("Published folder ready: '{FolderName}'", folderName);
+        _logger.LogInformation("Published folder ready: '{FolderPath}'", folderPath);
 
         return Task.CompletedTask;
     }
