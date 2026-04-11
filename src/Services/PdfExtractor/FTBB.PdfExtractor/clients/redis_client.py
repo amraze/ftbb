@@ -28,7 +28,6 @@ class RedisClient:
             )
             # Test connection
             self.redis_client.ping()
-            logger.info(f"Redis connected to {RedisConfig.HOST}:{RedisConfig.PORT}")
         except Exception as e:
             logger.error(f"Failed to connect to Redis: {e}")
             raise
@@ -43,7 +42,6 @@ class RedisClient:
             expiry_time = expiry or RedisConfig.DEFAULT_EXPIRY
             
             self.redis_client.setex(key, expiry_time, value)
-            logger.info(f"Team data stored: {key}")
             return True
         except Exception as e:
             logger.error(f"Failed to store team data: {e}")
@@ -59,7 +57,6 @@ class RedisClient:
             expiry_time = expiry or RedisConfig.DEFAULT_EXPIRY
             
             self.redis_client.setex(key, expiry_time, value)
-            logger.info(f"Extraction result stored: {key}")
             return True
         except Exception as e:
             logger.error(f"Failed to store extraction result: {e}")
@@ -100,7 +97,6 @@ class RedisClient:
             expiry_time = expiry or RedisConfig.DEFAULT_EXPIRY
             
             self.redis_client.setex(key, expiry_time, value)
-            logger.info(f"Event metadata stored: {key}")
             return True
         except Exception as e:
             logger.error(f"Failed to store event metadata: {e}")
@@ -141,7 +137,6 @@ class RedisClient:
         try:
             key = RedisConfig.get_team_key(team_abbr, event_id)
             self.redis_client.delete(key)
-            logger.info(f"Team data deleted: {key}")
             return True
         except Exception as e:
             logger.error(f"Failed to delete team data: {e}")
@@ -160,7 +155,6 @@ class RedisClient:
             event_key = RedisConfig.get_event_key(event_id)
             self.redis_client.delete(event_key)
             
-            logger.info(f"All event data deleted for event: {event_id}")
             return True
         except Exception as e:
             logger.error(f"Failed to delete event data: {e}")

@@ -39,8 +39,6 @@ class RabbitMQClient:
             
             self.connection = pika.BlockingConnection(parameters)
             self.channel = self.connection.channel()
-            
-            logger.info(f"RabbitMQ connected to {RabbitMQConfig.HOST}:{RabbitMQConfig.PORT}")
         except Exception as e:
             logger.error(f"Failed to connect to RabbitMQ: {e}")
             raise
@@ -54,14 +52,12 @@ class RabbitMQClient:
                 exchange_type=RabbitMQConfig.EXCHANGE_TYPE,
                 durable=RabbitMQConfig.DURABLE_EXCHANGE
             )
-            logger.info(f"Exchange declared: {RabbitMQConfig.EXCHANGE_NAME}")
             
             # Declare queue
             self.channel.queue_declare(
                 queue=RabbitMQConfig.QUEUE_NAME,
                 durable=RabbitMQConfig.DURABLE_QUEUE
             )
-            logger.info(f"Queue declared: {RabbitMQConfig.QUEUE_NAME}")
             
             # Bind queue to exchange
             self.channel.queue_bind(
@@ -69,7 +65,6 @@ class RabbitMQClient:
                 queue=RabbitMQConfig.QUEUE_NAME,
                 routing_key=RabbitMQConfig.BINDING_KEY
             )
-            logger.info(f"Queue bound to exchange with key: {RabbitMQConfig.BINDING_KEY}")
             
         except Exception as e:
             logger.error(f"Failed to declare infrastructure: {e}")
@@ -83,9 +78,6 @@ class RabbitMQClient:
                 queue=RabbitMQConfig.QUEUE_NAME,
                 on_message_callback=callback
             )
-            
-            logger.info(f"Listening to queue: {RabbitMQConfig.QUEUE_NAME}")
-            logger.info("Waiting for messages... Press CTRL+C to exit")
             
             self.channel.start_consuming()
         except KeyboardInterrupt:
@@ -123,7 +115,6 @@ class RabbitMQClient:
                 )
             )
             
-            logger.info(f"Message published to {exchange} with key {routing_key}")
             return True
         except Exception as e:
             logger.error(f"Failed to publish message: {e}")

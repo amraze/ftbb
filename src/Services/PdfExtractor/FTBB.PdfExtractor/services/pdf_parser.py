@@ -44,11 +44,8 @@ class SimplifiedBasketballParser:
         }
     
     def _extract_text_with_ocr(self) -> str:
-        """Extract text from PDF using OCR (for scanned documents)"""
         if not OCR_AVAILABLE:
             raise ImportError("OCR not available. Install: pip install pymupdf pytesseract")
-        
-        logger.info("Running OCR (this may take a moment)...")
         
         if OCR_METHOD == 'pymupdf':
             return self._ocr_with_pymupdf()
@@ -120,13 +117,9 @@ class SimplifiedBasketballParser:
         return found >= 2
     
     def _clean_ocr_text(self, text: str) -> str:
-        """Clean up common OCR errors"""
-        # Remove table border artifacts
         text = re.sub(r'\|+', ' ', text)
         text = re.sub(r'\[(?!\d)', ' ', text)
         text = re.sub(r'(?<!\d)\]', ' ', text)
-        
-        # Normalize spaces
         text = re.sub(r'[ \t]+', ' ', text)
         text = re.sub(r'\n{3,}', '\n\n', text)
         
@@ -136,7 +129,6 @@ class SimplifiedBasketballParser:
         """Main parsing method"""
         text = ""
         
-        # Step 1: Try normal text extraction
         try:
             with pdfplumber.open(self.pdf_path) as pdf:
                 first_page = pdf.pages[0]
@@ -145,10 +137,8 @@ class SimplifiedBasketballParser:
             logger.warning(f"pdfplumber extraction failed: {e}")
             text = ""
         
-        # Step 2: Check if text is sufficient, otherwise try OCR
         if not self._is_text_sufficient(text):
             if OCR_AVAILABLE:
-                logger.info("Text extraction insufficient, falling back to OCR...")
                 try:
                     text = self._extract_text_with_ocr()
                     self.used_ocr = True

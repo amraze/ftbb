@@ -7,6 +7,7 @@ Stores results in Redis instead of local JSON files
 
 import json
 import logging
+import os
 from pathlib import Path
 from datetime import datetime
 
@@ -31,30 +32,19 @@ class PDFExtractionService:
     
     def _connect_clients(self):
         try:
-            logger.info("Initializing Redis connection...")
             self.redis_client = RedisClient()
-            
-            logger.info("Initializing RabbitMQ connection...")
             self.rabbitmq_client = RabbitMQClient()
             self.rabbitmq_client.declare_infrastructure()
-            
             logger.info("All clients connected successfully")
         except Exception as e:
             logger.error(f"Failed to initialize clients: {e}")
             raise
     
     def process_folder_event(self, folder_path: str, event_id: str, creation_date: str) -> dict:
+        downloads_path = os.getenv('DOWNLOADS_PATH', '/downloads')
+        folder_name = folder_path.split('\\')[-1] if '\\' in folder_path else folder_path.split('/')[-1]
+        actual_folder_path = Path(downloads_path) / folder_name
         logger.info(f"Processing folder: {folder_path}")
-        
-        # Convert relative path from PdfWorker to absolute path from PdfExtractor
-        current_dir = Path(__file__).parent
-        pdfworker_downloads = current_dir.parent.parent / "PdfWorker" / "FTBB.PdfWorker" / "Downloads"
-        folder_name = Path(folder_path).name
-        actual_folder_path = pdfworker_downloads / folder_name
-        
-        logger.info(f"Looking for folder at: {actual_folder_path}")
-        
-        # Check if folder exists
         if not actual_folder_path.exists():
             logger.error(f"Folder not found: {actual_folder_path}")
             return {
@@ -63,9 +53,7 @@ class PDFExtractionService:
                 'event_id': event_id
             }
         
-        # Find all PDF files in the folder
         pdf_files = list(actual_folder_path.glob("*.pdf"))
-        
         if not pdf_files:
             logger.warning(f"No PDF files found in {actual_folder_path}")
             return {
@@ -75,39 +63,21 @@ class PDFExtractionService:
                 'pdf_count': 0
             }
         
-        logger.info(f"Found {len(pdf_files)} PDF file(s)")
-        
-        # Track success/failure
         success_count = 0
         fail_count = 0
         teams_stored = 0
-        
-        # Process each PDF file independently
         for pdf_file in pdf_files:
-            logger.info(f"Processing: {pdf_file.name}")
-            
             try:
-                # Parse PDF
                 parser = SimplifiedBasketballParser(str(pdf_file))
                 game_data = parser.parse()
                 
                 if game_data and game_data.get("teams"):
-                    # Log extraction method
                     method = "OCR" if parser.used_ocr else "text extraction"
-                    logger.info(f"Extraction method: {method}")
-                    
-                    # Store each team separately in Redis
                     for team in game_data.get("teams", []):
                         team_name = team.get('name', 'Unknown')
                         team_abbr = team.get('abbreviation', 'UNKNOWN')
                         player_count = len(team.get('players', []))
-                        
-                        # Store team data in Redis
-                        self.redis_client.store_team_data(
-                            team,
-                            team_abbr,
-                            event_id
-                        )
+                        self.redis_client.store_team_data(team,team_abbr,event_id)
                         
                         logger.info(
                             f"✓ Stored: {team_name} ({team_abbr}) - {player_count} player(s)"
@@ -124,7 +94,6 @@ class PDFExtractionService:
                 fail_count += 1
                 continue
         
-        # Prepare result
         result = {
             'success': success_count > 0,
             'event_id': event_id,
@@ -134,41 +103,18 @@ class PDFExtractionService:
             'total_pdf': len(pdf_files)
         }
         
-        # Log summary
-        logger.info(f"\n{'='*50}")
-        logger.info(f"Processing complete!")
-        logger.info(f"  ✓ PDFs processed: {success_count}")
-        logger.info(f"  ✓ Teams stored in Redis: {teams_stored}")
-        logger.info(f"  ✗ Failed: {fail_count} file(s)")
-        logger.info(f"{'='*50}\n")
-        
         return result
     
     def message_callback(self, ch, method, properties, body):
-        logger.info(f"\n{'='*50}")
-        logger.info(f"Event Received!")
-        logger.info(f"{'='*50}")
         
         try:
-            # Parse the message
             message = json.loads(body)
-            logger.info(f"Message Content (JSON):")
-            logger.info(json.dumps(message, indent=2))
-            
-            # Extract folder information
             folder_path = message.get('FolderPath')
             event_id = message.get('Id')
             creation_date = message.get('CreationDate')
             
             if folder_path and event_id:
-                # Process the folder and store results in Redis
-                result = self.process_folder_event(
-                    folder_path,
-                    event_id,
-                    creation_date or datetime.now().isoformat()
-                )
-                
-                logger.info(f"Processing result: {json.dumps(result, indent=2)}")
+                result = self.process_folder_event(folder_path,event_id,creation_date or datetime.now().isoformat())
             else:
                 logger.error("ERROR: FolderPath or Id not found in message")
             
@@ -178,23 +124,10 @@ class PDFExtractionService:
         except Exception as e:
             logger.error(f"ERROR processing message: {e}", exc_info=True)
         
-        logger.info(f"Routing Key: {method.routing_key}")
-        logger.info(f"Exchange: {method.exchange}")
-        logger.info(f"Delivery Tag: {method.delivery_tag}")
-        logger.info(f"{'='*50}\n")
-        
-        # Acknowledge the message
         ch.basic_ack(delivery_tag=method.delivery_tag)
     
     def start(self):
-        """Start listening for messages"""
         try:
-            logger.info(f"Starting PDF Extraction Service")
-            logger.info(f"{'='*50}")
-            logger.info(f"✓ Redis backend enabled")
-            logger.info(f"✓ Listening to RabbitMQ queue")
-            logger.info(f"{'='*50}\n")
-            
             self.rabbitmq_client.start_consuming(self.message_callback)
         except KeyboardInterrupt:
             logger.info("\nShutting down gracefully...")
@@ -204,19 +137,16 @@ class PDFExtractionService:
             self.cleanup()
     
     def cleanup(self):
-        """Clean up resources"""
         try:
             if self.rabbitmq_client:
                 self.rabbitmq_client.close()
             if self.redis_client:
                 self.redis_client.close()
-            logger.info("Cleanup completed")
         except Exception as e:
             logger.error(f"Error during cleanup: {e}")
 
 
 def main():
-    """Main entry point"""
     try:
         service = PDFExtractionService()
         service.start()

@@ -17,6 +17,11 @@ services:
       - RABBITMQ_PORT=5672
       - RABBITMQ_USER=guest
       - RABBITMQ_PASSWORD=guest
+      - DOWNLOADS_PATH=/downloads
+    volumes:
+      - type: bind
+        source: ./src/Services/PdfWorker/FTBB.PdfWorker/Downloads
+        target: /downloads
     depends_on:
       - rabbitmq
       - redis
