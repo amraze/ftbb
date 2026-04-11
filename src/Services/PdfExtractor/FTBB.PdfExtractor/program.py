@@ -77,16 +77,6 @@ class PDFExtractionService:
         
         logger.info(f"Found {len(pdf_files)} PDF file(s)")
         
-        # Store event metadata
-        event_metadata = {
-            'event_id': event_id,
-            'folder_path': str(actual_folder_path),
-            'creation_date': creation_date,
-            'processing_date': datetime.now().isoformat(),
-            'pdf_count': len(pdf_files)
-        }
-        self.redis_client.store_event_metadata(event_id, event_metadata)
-        
         # Track success/failure
         success_count = 0
         fail_count = 0
@@ -106,14 +96,7 @@ class PDFExtractionService:
                     method = "OCR" if parser.used_ocr else "text extraction"
                     logger.info(f"Extraction method: {method}")
                     
-                    # Store entire extraction result
-                    self.redis_client.store_extraction_result(
-                        game_data,
-                        event_id,
-                        pdf_file.name
-                    )
-                    
-                    # Store each team separately for easy access
+                    # Store each team separately in Redis
                     for team in game_data.get("teams", []):
                         team_name = team.get('name', 'Unknown')
                         team_abbr = team.get('abbreviation', 'UNKNOWN')
