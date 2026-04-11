@@ -22,7 +22,7 @@ public class PdfEventPublisher : IPdfEventPublisher
         };
 
         _eventBus.Publish(evt);
-        _logger.LogInformation("Published folder ready: '{FolderPath}'", folderPath);
+        _logger.LogInformation("Published folder to PdfExtractor : '{FolderPath}'", folderPath);
 
         return Task.CompletedTask;
     }
